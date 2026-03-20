@@ -1,0 +1,162 @@
+.wrap {
+  position: relative;
+  width: 100%;
+  height: 320px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.map {
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+/* Empty state */
+.emptyOverlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: var(--surface2);
+  color: var(--muted2);
+  font-family: 'Space Mono', monospace;
+  font-size: 11px;
+  text-align: center;
+  line-height: 1.8;
+  pointer-events: none;
+  z-index: 10;
+}
+.emptyIcon { font-size: 36px; opacity: 0.35; }
+
+/* Routing spinner */
+.routing {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255,255,255,0.93);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  z-index: 500;
+  box-shadow: var(--sh-sm);
+  backdrop-filter: blur(4px);
+}
+.spinner {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--accent-light);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Info bar */
+.infoBar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255,255,255,0.93);
+  border-top: 1px solid var(--border);
+  padding: 7px 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  backdrop-filter: blur(6px);
+  z-index: 400;
+}
+.infoBar strong { color: var(--text); }
+.sep { color: var(--muted2); }
+.free { color: var(--accent); font-weight: 700; margin-left: auto; }
+
+/* Layer switcher */
+.layerSwitcher {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 400;
+}
+
+.layerBtn {
+  background: rgba(255,255,255,0.92);
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 9px;
+  font-family: 'Space Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  backdrop-filter: blur(4px);
+  white-space: nowrap;
+  box-shadow: var(--sh-sm);
+  text-align: left;
+}
+
+.layerBtn:hover {
+  background: white;
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: translateX(-2px);
+}
+
+.layerActive {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(26,138,90,0.3) !important;
+}
+
+/* Leaflet overrides to match our theme */
+:global(.leaflet-popup-content-wrapper) {
+  border-radius: 10px !important;
+  font-family: 'Syne', sans-serif !important;
+  font-size: 12px !important;
+  box-shadow: var(--sh-md) !important;
+}
+:global(.leaflet-popup-tip) {
+  box-shadow: none !important;
+}
+:global(.leaflet-control-attribution) {
+  font-size: 9px !important;
+  background: rgba(255,255,255,0.7) !important;
+  backdrop-filter: blur(4px) !important;
+}
+:global(.leaflet-control-zoom a) {
+  font-family: 'Syne', sans-serif !important;
+  font-weight: 700 !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
+}
+:global(.leaflet-control-zoom a:hover) {
+  background: var(--accent-light) !important;
+  color: var(--accent) !important;
+}
+
+@media (max-width: 780px) {
+  .wrap { height: 250px; }
+  .layerSwitcher { flex-direction: row; top: auto; bottom: 36px; right: 8px; }
+  .layerBtn { font-size: 9px; padding: 4px 7px; }
+}

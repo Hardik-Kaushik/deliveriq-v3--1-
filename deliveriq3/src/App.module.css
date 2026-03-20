@@ -1,0 +1,27 @@
+.root { display: flex; flex-direction: column; min-height: 100vh; }
+
+.app {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  flex: 1;
+  height: calc(100vh - 58px);
+}
+
+.right {
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+}
+
+.results { padding: 20px; flex: 1; }
+
+.footer {
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 14px 20px; text-align: center;
+  font-family: 'Space Mono', monospace; font-size: 10px; color: var(--muted2);
+}
+.footer span { color: var(--accent); }
+
+@media (max-width: 780px) {
+  .app { grid-template-columns: 1fr; height: auto; }
+  .right { overflow-y: visible; }
+}
