@@ -176,3 +176,58 @@
   .fbRow { grid-template-columns:1fr; }
   .vehicleGrid { grid-template-columns:1fr; }
 }
+/* ── Book button on rec card ── */
+.recBookBtn {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  color: white;
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  letter-spacing: 0.3px;
+  transition: all .15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+.recBookBtn:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+/* ── Book row on each platform card ── */
+.bookRow {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  margin-top: 2px;
+}
+.bookBtn {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1.5px solid;
+  font-family: 'Syne', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  letter-spacing: 0.3px;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.bookBtn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+}
+.bookNote {
+  font-family: 'Space Mono', monospace;
+  font-size: 9px;
+  color: var(--muted2);
+}

@@ -82,6 +82,22 @@ export default function ResultsPanel({ results, context, onFeedback }) {
     setTimeout(() => setFbDone(false), 4000)
   }
 
+  // Final verified URL mapping
+  const handleRedirect = (platformId) => {
+    const id = platformId.toLowerCase();
+    const links = {
+      porter: 'https://porter.in/',
+      rapido: 'https://www.rapido.bike/',
+      shadowfax: 'https://www.shadowfax.in/flash',
+      shadowfox: 'https://www.shadowfax.in/flash'
+    }
+    
+    // If the platform contains 'rapido' (like 'rapido_2w' or 'rapido_3w'), use Rapido link
+    const target = id.includes('rapido') ? links.rapido : links[id];
+    
+    if (target) window.open(target, '_blank', 'noopener,noreferrer')
+  }
+
   const verdictLabels = ['🟢 Best Value', '🟡 Good', '🔴 Higher', '⚪ Priciest']
 
   return (
@@ -89,7 +105,11 @@ export default function ResultsPanel({ results, context, onFeedback }) {
 
       {/* ── Best pick ────────────────────────────────────────────────────────── */}
       <div className={styles.sLabel}>Best Value Pick</div>
-      <div className={styles.rec}>
+      <div 
+        className={styles.rec} 
+        onClick={() => handleRedirect(best.platform)}
+        style={{ cursor: 'pointer' }}
+      >
         <span className={styles.recIcon}>{PLATFORM_META[best.platform].icon}</span>
         <div className={styles.recBody}>
           <div className={styles.recTag}>Recommended Platform</div>
@@ -135,12 +155,20 @@ export default function ResultsPanel({ results, context, onFeedback }) {
               </div>
             </div>
             <div className={styles.vehicleGrid}>
-              <div className={styles.vehicleBox}>
+              <div 
+                className={styles.vehicleBox} 
+                onClick={() => handleRedirect('rapido')} 
+                style={{ cursor: 'pointer' }}
+              >
                 <div className={styles.vehicleTitle}>🛵 Rapido 2W</div>
                 <AcceptanceMeter pct={rapidoV.acc2w} />
                 <div className={styles.vehicleLimits}>Safe: ≤10kg &nbsp;·&nbsp; Max: 20kg</div>
               </div>
-              <div className={styles.vehicleBox}>
+              <div 
+                className={styles.vehicleBox} 
+                onClick={() => handleRedirect('rapido')} 
+                style={{ cursor: 'pointer' }}
+              >
                 <div className={styles.vehicleTitle}>🛺 Rapido 3W</div>
                 <AcceptanceMeter pct={rapidoV.acc3w} />
                 <div className={styles.vehicleLimits}>Safe: ≤30kg &nbsp;·&nbsp; Max: 50kg</div>
@@ -178,10 +206,12 @@ export default function ResultsPanel({ results, context, onFeedback }) {
           return (
             <div
               key={r.platform}
+              onClick={() => handleRedirect(r.platform)}
               className={`${styles.card} ${i === 0 ? styles.winner : ''} ${isRisk ? styles.risky : ''}`}
               style={{
                 borderColor: i === 0 ? m.color : isRisk ? '#fca5a5' : undefined,
                 background:  i === 0 ? m.bg    : isRisk ? '#fff5f5' : undefined,
+                cursor: 'pointer'
               }}
             >
               {/* Risk ribbon */}
@@ -235,7 +265,7 @@ export default function ResultsPanel({ results, context, onFeedback }) {
       <div className={styles.fb}>
         <h3 className={styles.fbTitle}>📊 Actual Price Paid?</h3>
         <p className={styles.fbSub}>
-          // Enter what you paid — we'll update platform bias for better accuracy
+          Enter what you paid — we'll update platform bias for better accuracy
         </p>
         <div className={styles.fbRow}>
           <div className={styles.field}>
