@@ -12,9 +12,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "leaflet": "^1.9.4",
-    "leaflet-routing-machine": "^3.2.12"
-  },
-  "devDependencies": {
+    "leaflet-routing-machine": "^3.2.12",
     "@vitejs/plugin-react": "^4.3.1",
     "vite": "^5.4.2"
   }
