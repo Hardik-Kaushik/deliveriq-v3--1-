@@ -81,7 +81,7 @@ export default function App() {
     const dist = parseFloat(distance) || 5
     const wt   = parseFloat(weight)   || 0
     const hour = hourOverride !== '' ? parseInt(hourOverride) : new Date().getHours()
-    const ctx  = { pickup, drop, hour, rain: isRaining, isWeekend, isFragile, weight: wt }
+    const ctx  = { pickup, drop, hour, rain: isRaining, isWeekend, isFragile }
     setResults(runPricingEngine({ ...ctx, distance: dist, weight: wt, adjustedFactors: adjFactors }))
     setLastCtx(ctx)
   }, [pickup, drop, distance, weight, hourOverride, isRaining, isWeekend, isFragile, adjFactors])
