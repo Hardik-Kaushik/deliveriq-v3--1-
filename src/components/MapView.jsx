@@ -3,19 +3,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import styles from './MapView.module.css'
 
-// Fix Leaflet default marker icon broken by bundlers
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png'
-import markerIcon   from 'leaflet/dist/images/marker-icon.png'
-import markerShadow from 'leaflet/dist/images/marker-shadow.png'
-
-delete L.Icon.Default.prototype._getIconUrl
-L.Icon.Default.mergeOptions({
-  iconUrl:       markerIcon,
-  iconRetinaUrl: markerIcon2x,
-  shadowUrl:     markerShadow,
-})
-
-// ── Tile layer definitions ─────────────────────────────────────────────────────
+// ── Tile layers ────────────────────────────────────────────────────────────────
 const TILE_LAYERS = {
   street: {
     label: '🗺️ Street',
@@ -41,7 +29,7 @@ const TILE_LAYERS = {
     attribution: '© <a href="https://carto.com">CARTO</a>',
     maxZoom: 19,
   },
-  watercolor: {
+  artistic: {
     label: '🎨 Artistic',
     url: 'https://tiles.stadiamaps.com/tiles/stamen_watercolor/{z}/{x}/{y}.jpg',
     attribution: '© <a href="https://stadiamaps.com">Stadia Maps</a>',
@@ -49,19 +37,42 @@ const TILE_LAYERS = {
   },
 }
 
-// Custom colored markers
-function makeMarker(color) {
+// ── Custom pin markers ─────────────────────────────────────────────────────────
+function makePin(color, label) {
   return L.divIcon({
     className: '',
-    html: `<div style="
-      width:16px;height:16px;
-      background:${color};
-      border:3px solid white;
-      border-radius:50%;
-      box-shadow:0 2px 6px rgba(0,0,0,0.35);
-    "></div>`,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
+    html: `
+      <div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 3px 6px rgba(0,0,0,0.3))">
+        <div style="
+          background:${color};
+          color:white;
+          font-family:'Syne',sans-serif;
+          font-size:10px;
+          font-weight:800;
+          padding:3px 7px;
+          border-radius:6px;
+          white-space:nowrap;
+          letter-spacing:0.5px;
+        ">${label}</div>
+        <div style="
+          width:0;height:0;
+          border-left:6px solid transparent;
+          border-right:6px solid transparent;
+          border-top:8px solid ${color};
+          margin-top:-1px;
+        "></div>
+        <div style="
+          width:8px;height:8px;
+          background:${color};
+          border:2px solid white;
+          border-radius:50%;
+          margin-top:-2px;
+        "></div>
+      </div>
+    `,
+    iconSize: [60, 48],
+    iconAnchor: [30, 46],
+    popupAnchor: [0, -46],
   })
 }
 
@@ -75,8 +86,9 @@ export default function MapView({ pickupCoords, dropCoords, routeInfo, onRouteCo
 
   const [activeLayer, setActiveLayer] = useState('street')
   const [isRouting,   setIsRouting]   = useState(false)
+  const [localRoute,  setLocalRoute]  = useState(null) // local copy for display before parent updates
 
-  // ── Init map ────────────────────────────────────────────────────────────────
+  // ── Init map ─────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (mapRef.current || !mapDivRef.current) return
 
@@ -84,12 +96,11 @@ export default function MapView({ pickupCoords, dropCoords, routeInfo, onRouteCo
       center: [12.9716, 77.5946],
       zoom: 12,
       zoomControl: false,
+      attributionControl: true,
     })
 
-    // Custom zoom control position
     L.control.zoom({ position: 'bottomright' }).addTo(mapRef.current)
 
-    // Initial tile layer
     const def = TILE_LAYERS.street
     tileRef.current = L.tileLayer(def.url, {
       attribution: def.attribution,
@@ -104,98 +115,58 @@ export default function MapView({ pickupCoords, dropCoords, routeInfo, onRouteCo
     }
   }, [])
 
-  // ── Switch tile layer ────────────────────────────────────────────────────────
+  // ── Switch tile layer ─────────────────────────────────────────────────────────
   const switchLayer = useCallback((key) => {
     if (!mapRef.current) return
     setActiveLayer(key)
-    if (tileRef.current) {
-      mapRef.current.removeLayer(tileRef.current)
-    }
+    if (tileRef.current) mapRef.current.removeLayer(tileRef.current)
     const def = TILE_LAYERS[key]
     tileRef.current = L.tileLayer(def.url, {
       attribution: def.attribution,
       maxZoom: def.maxZoom,
     }).addTo(mapRef.current)
-
-    // Re-add route on top if present
-    if (routeLayer.current) {
-      routeLayer.current.bringToFront?.()
-    }
+    if (routeLayer.current) routeLayer.current.bringToFront?.()
   }, [])
 
-  // ── Update markers + route when coords change ────────────────────────────────
-  useEffect(() => {
-    if (!mapRef.current) return
-
-    // Pickup marker
-    if (pickupCoords) {
-      if (pickupMarker.current) {
-        pickupMarker.current.setLatLng(pickupCoords)
-      } else {
-        pickupMarker.current = L.marker(pickupCoords, { icon: makeMarker('#1a8a5a') })
-          .addTo(mapRef.current)
-          .bindPopup('<b>📍 Pickup</b>')
-      }
-    }
-
-    // Drop marker
-    if (dropCoords) {
-      if (dropMarker.current) {
-        dropMarker.current.setLatLng(dropCoords)
-      } else {
-        dropMarker.current = L.marker(dropCoords, { icon: makeMarker('#dc2626') })
-          .addTo(mapRef.current)
-          .bindPopup('<b>📦 Drop</b>')
-      }
-    }
-
-    // Fit bounds to both markers
-    if (pickupCoords && dropCoords) {
-      mapRef.current.fitBounds(
-        L.latLngBounds([pickupCoords, dropCoords]),
-        { padding: [50, 50] }
-      )
-      fetchRoute(pickupCoords, dropCoords)
-    } else if (pickupCoords) {
-      mapRef.current.setView(pickupCoords, 14)
-    } else if (dropCoords) {
-      mapRef.current.setView(dropCoords, 14)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickupCoords, dropCoords])
-
-  // ── OSRM routing (free, no API key) ─────────────────────────────────────────
+  // ── OSRM route fetch ──────────────────────────────────────────────────────────
   const fetchRoute = useCallback(async (from, to) => {
     setIsRouting(true)
     try {
-      const url = `https://router.project-osrm.org/route/v1/driving/` +
+      const url =
+        `https://router.project-osrm.org/route/v1/driving/` +
         `${from[1]},${from[0]};${to[1]},${to[0]}?overview=full&geometries=geojson`
 
       const res  = await fetch(url)
       const data = await res.json()
-
       if (data.code !== 'Ok' || !data.routes?.length) return
 
       const route    = data.routes[0]
       const coords   = route.geometry.coordinates.map(([lng, lat]) => [lat, lng])
       const km       = (route.distance / 1000).toFixed(1)
       const mins     = Math.round(route.duration / 60)
-      const duration = mins >= 60
-        ? `${Math.floor(mins / 60)}h ${mins % 60}m`
-        : `${mins} min`
+      const duration = mins >= 60 ? `${Math.floor(mins / 60)}h ${mins % 60}m` : `${mins} min`
 
-      // Draw route polyline
-      if (routeLayer.current) {
-        mapRef.current.removeLayer(routeLayer.current)
-      }
+      // Draw polyline
+      if (routeLayer.current) mapRef.current.removeLayer(routeLayer.current)
       routeLayer.current = L.polyline(coords, {
-        color: '#1a8a5a',
+        color: '#2563eb',
         weight: 5,
-        opacity: 0.85,
+        opacity: 0.9,
         lineJoin: 'round',
+        dashArray: null,
       }).addTo(mapRef.current)
 
-      onRouteComputed?.({ km: parseFloat(km), duration, distText: km + ' km' })
+      // Add subtle shadow polyline beneath
+      L.polyline(coords, {
+        color: '#000',
+        weight: 8,
+        opacity: 0.08,
+        lineJoin: 'round',
+      }).addTo(mapRef.current).bringToBack()
+
+      const info = { km: parseFloat(km), duration, distText: km + ' km' }
+      setLocalRoute(info)
+      onRouteComputed?.(info)
     } catch (err) {
       console.error('Route fetch failed:', err)
     } finally {
@@ -203,34 +174,117 @@ export default function MapView({ pickupCoords, dropCoords, routeInfo, onRouteCo
     }
   }, [onRouteComputed])
 
+  // ── React to pickup coords change → instant blue pin ─────────────────────────
+  useEffect(() => {
+    if (!mapRef.current) return
+    if (!pickupCoords) {
+      if (pickupMarker.current) {
+        mapRef.current.removeLayer(pickupMarker.current)
+        pickupMarker.current = null
+      }
+      return
+    }
+
+    // Place / move blue pickup pin immediately
+    if (pickupMarker.current) {
+      pickupMarker.current.setLatLng(pickupCoords)
+    } else {
+      pickupMarker.current = L.marker(pickupCoords, {
+        icon: makePin('#2563eb', '📍 Pickup'),
+        zIndexOffset: 100,
+      })
+        .addTo(mapRef.current)
+        .bindPopup('<b style="font-family:Syne,sans-serif">📍 Pickup Location</b>')
+    }
+
+    // If no drop yet, fly to pickup
+    if (!dropCoords) {
+      mapRef.current.flyTo(pickupCoords, 14, { animate: true, duration: 0.8 })
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickupCoords])
+
+  // ── React to drop coords change → instant red pin + route ────────────────────
+  useEffect(() => {
+    if (!mapRef.current) return
+    if (!dropCoords) {
+      if (dropMarker.current) {
+        mapRef.current.removeLayer(dropMarker.current)
+        dropMarker.current = null
+      }
+      if (routeLayer.current) {
+        mapRef.current.removeLayer(routeLayer.current)
+        routeLayer.current = null
+      }
+      setLocalRoute(null)
+      return
+    }
+
+    // Place / move red drop pin immediately
+    if (dropMarker.current) {
+      dropMarker.current.setLatLng(dropCoords)
+    } else {
+      dropMarker.current = L.marker(dropCoords, {
+        icon: makePin('#dc2626', '📦 Drop'),
+        zIndexOffset: 100,
+      })
+        .addTo(mapRef.current)
+        .bindPopup('<b style="font-family:Syne,sans-serif">📦 Drop Location</b>')
+    }
+
+    // If both pins exist → fit bounds + fetch route
+    if (pickupCoords && dropCoords) {
+      mapRef.current.fitBounds(
+        L.latLngBounds([pickupCoords, dropCoords]),
+        { padding: [60, 60], animate: true, duration: 0.8 }
+      )
+      fetchRoute(pickupCoords, dropCoords)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dropCoords])
+
+  const displayInfo = routeInfo || localRoute
+
   return (
     <div className={styles.wrap}>
-      {/* Map container */}
       <div ref={mapDivRef} className={styles.map} />
 
-      {/* Empty state overlay */}
+      {/* Empty state */}
       {!pickupCoords && !dropCoords && (
         <div className={styles.emptyOverlay}>
           <span className={styles.emptyIcon}>🗺️</span>
-          <p>Search pickup &amp; drop<br />to see route on map</p>
+          <p>Search a pickup location<br />to pin it on the map</p>
+        </div>
+      )}
+
+      {/* Only pickup pinned */}
+      {pickupCoords && !dropCoords && (
+        <div className={styles.hintBar}>
+          <span className={styles.hintDot} style={{ background: '#2563eb' }} />
+          Pickup pinned — now search a drop location
         </div>
       )}
 
       {/* Routing spinner */}
       {isRouting && (
-        <div className={styles.routing}>
-          <span className={styles.spinner} /> Calculating route…
+        <div className={styles.routingBadge}>
+          <span className={styles.spinner} />
+          Calculating route…
         </div>
       )}
 
       {/* Route info bar */}
-      {routeInfo && (
+      {displayInfo && !isRouting && (
         <div className={styles.infoBar}>
-          <span>📏 <strong>{routeInfo.distText}</strong></span>
-          <span className={styles.sep}>·</span>
-          <span>⏱️ <strong>{routeInfo.duration}</strong></span>
-          <span className={styles.sep}>·</span>
-          <span className={styles.free}>🆓 OpenStreetMap · No API key</span>
+          <span className={styles.infoChip} style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #bfdbfe' }}>
+            📏 {displayInfo.distText}
+          </span>
+          <span className={styles.infoChip} style={{ background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0' }}>
+            ⏱️ {displayInfo.duration}
+          </span>
+          <span className={styles.infoChip} style={{ background: '#f5f3ff', color: '#7c3aed', border: '1px solid #ddd6fe', marginLeft: 'auto' }}>
+            🆓 OSM · Free
+          </span>
         </div>
       )}
 
@@ -241,7 +295,6 @@ export default function MapView({ pickupCoords, dropCoords, routeInfo, onRouteCo
             key={key}
             className={`${styles.layerBtn} ${activeLayer === key ? styles.layerActive : ''}`}
             onClick={() => switchLayer(key)}
-            title={def.label}
           >
             {def.label}
           </button>
